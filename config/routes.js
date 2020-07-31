@@ -13,6 +13,17 @@ const home = require('../app/controllers/home');
 module.exports = function(app) {
   app.get('/', home.index);
 
+  app.get('/register/quick-book-company', home.requestOAut2Token);
+
+  app.get('/get/Oauth2Token', home.getOAuth2Token);
+
+  app.get('/add/qick-books-customer', home.addCustomer);
+
+  app.get('/get-compnay-info', home.companyDetails);
+
+  app.get('/get-excel-cell-value/:value', home.sheetAlgo);
+
+
   /**
    * Error handling
    */
