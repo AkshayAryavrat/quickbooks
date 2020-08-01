@@ -17,5 +17,20 @@ quickBookApiList.apiList = {
                 return `${baseUrl}/v3/company/${data.companyId}/customer`
             }
         },
+        createCusItm: {
+            returnCreCusItm: function(data) {
+                return `${baseUrl}/v3/company/${data.companyId}/item`
+            }
+        },
+        createCusInvoice: {
+            returnCreCusInv: function(data) {
+                return `${baseUrl}/v3/company/${data.companyId}/invoice`
+            }
+        },
+        sendInvMail: {
+            returnSendInvMail: function(data) {
+                return `${baseUrl}/v3/company/${data.companyId}/invoice/${data.invoiceId}/send?sendTo=${data.email}`
+            }
+        },
     },
 }

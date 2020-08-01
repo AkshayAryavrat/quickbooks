@@ -36,11 +36,39 @@ exports.addCustomer = function addCustomer(req, res) {
   try {
     OAuthToken.addCustomer()
     .then((custAdded) => {
-      return res.send({status: 'success', message: custAdded.data});
+      return res.send({status: 'success', message: 'Item Added Successfully', data: custAdded.data});
     })
     .catch((error) => {
       return res.send({status: 'error', message: error.message});
     })
+  } catch (error) {
+    return res.send({status: 'error', message: error.message});
+  }
+}
+
+exports.createItem = function createItem(req, res) {
+  try {
+    OAuthToken.createItem(req.params.customerId)
+    .then((itmAdded)=> {
+      return res.send({status: 'success', message: 'Customer Item Added Successfully', data: itmAdded.data});
+    })
+    .catch((error) => {
+      return res.send({status: 'error', message: error.message});
+    })
+  } catch (error) {
+    return res.send({status: 'error', message: error.message});
+  }
+}
+
+exports.createInvoice = function createInvoice(req, res) {
+  try {
+    OAuthToken.createInvoice(req.params.customerId, req.params.itemId)
+    .then((invAdded) => {
+      return res.send({status: 'success', message: 'Customer Invoice Generated Successfully', data: invAdded.data});
+    })
+    .catch((error) =>{
+      return res.send({status: 'error', message: error.message});
+    });
   } catch (error) {
     return res.send({status: 'error', message: error.message});
   }

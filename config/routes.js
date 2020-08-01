@@ -23,6 +23,10 @@ module.exports = function(app) {
 
   app.get('/get-excel-cell-value/:value', home.sheetAlgo);
 
+  app.get('/create-quickbook-customer-item/:customerId', home.createItem);
+
+  app.get('/create-quickbook-customer-invoice/:customerId/:itemId', home.createInvoice);
+
 
   /**
    * Error handling

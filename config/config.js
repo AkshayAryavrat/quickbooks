@@ -36,3 +36,32 @@ util.customerDumy = {
         "FreeFormNumber": "(91) 8956853562"
     }
 }
+
+util.itemDummy = {
+    "Name": "BP Test",
+    "Description": "Pay For BP",
+    "IncomeAccountRef": {
+      "value": "1",
+      "name": "Services"
+    },
+    "Type": "Service"
+}
+
+util.invoiceDumy = {
+    "Line": [
+      {
+        "Amount": 100.00,
+        "DetailType": "SalesItemLineDetail",
+        "SalesItemLineDetail": {
+          "ItemRef": {
+            "value": "24", // Customer Item Id
+            "name": "BP Test" // Customer Item Name
+          },
+          "Qty": 2
+        }
+      }
+    ],
+    "CustomerRef": {
+      "value": "68" // Customer Id
+    }
+  }

@@ -5,6 +5,8 @@ const BookAuth = require('../../../app/models/auth');
 const quickBookApi = require('./quick-books-api');
 const Customer = require('../../../app/models/customer');
 const ObjectID = require('mongodb').ObjectID;
+const CusItem = require('../../../app/models/item');
+const CusInv = require('../../../app/models/invoice');
 
 var OAuth = module.exports;
 
@@ -127,8 +129,6 @@ OAuth.addCustomer = function addCustomer() {
         return getValidToken(config.quickbooks.mode.type === 'sandbox' ? config.quickbooks.relamId.sandbox : config.quickbooks.relamId.production)
         .then(async(vaildTokenDetails) => {
 
-            // console.log(vaildTokenDetails)
-
             let validToken = vaildTokenDetails.valid ? vaildTokenDetails.authDetails : await refreshToken(vaildTokenDetails.authDetails);
             let postData = {
                 module: 'customer',
@@ -152,9 +152,97 @@ OAuth.addCustomer = function addCustomer() {
                     'PrimaryPhone': customerDetails.customerDetails.PrimaryPhone,
                 };
                 let quickbookCust = await quickBookApi.postApi(postData);
-                await Customer.findByIdAndUpdate({_id: ObjectID(customerDetails.customerDetails._id)},{quickBookCustId: quickbookCust.data.Customer.Id});
+                await Customer.findByIdAndUpdate({_id: ObjectID(customerDetails.customerDetails._id)},{quickBookCustId: quickbookCust.data.Customer.Id},{useFindAndModify: false});
                 return quickbookCust;
             }
+
+        })
+        .catch((error)=> {
+            throw new Error(error.message);
+        })
+
+    } catch (error) {
+
+        throw new Error(error.message)
+    }
+}
+
+OAuth.createItem = function createItem(customerId) {
+    try {
+        return getValidToken(config.quickbooks.mode.type === 'sandbox' ? config.quickbooks.relamId.sandbox : config.quickbooks.relamId.production)
+        .then(async(vaildTokenDetails) => {
+
+            let validToken = vaildTokenDetails.valid ? vaildTokenDetails.authDetails : await refreshToken(vaildTokenDetails.authDetails);
+            let postData = {
+                module: 'customer',
+                subModule: 'createCusItm',
+                functionName: 'returnCreCusItm',
+                companyId: validToken.redirectRes.realmId,
+                authDetails: validToken.oAuth2Token.access_token,
+            }
+            config.itemDummy.customerId = customerId;
+            let custItmDetails = await CusItem.addCusItm(config.itemDummy);
+
+
+            if(custItmDetails.exist) {
+                throw new Error('Customer Item Already Added')
+            }
+
+            if(!custItmDetails.exist) {
+                postData.bodyData = {
+                    'Name': custItmDetails.itemDetails.Name,
+                    'IncomeAccountRef': custItmDetails.itemDetails.IncomeAccountRef,
+                    'Type': custItmDetails.itemDetails.Type,
+                    "Description": custItmDetails.itemDetails.Description
+                };
+                let quickbookCustItm = await quickBookApi.postApi(postData);
+                await CusItem.findByIdAndUpdate({_id: ObjectID(custItmDetails.itemDetails._id)},{
+                    quickBookItemId: quickbookCustItm.data.Item.Id,
+                    Active: quickbookCustItm.data.Item.Active,
+                    FullyQualifiedName: quickbookCustItm.data.Item.FullyQualifiedName,
+                    Taxable: quickbookCustItm.data.Item.Taxable,
+                    UnitPrice: quickbookCustItm.data.Item.UnitPrice,
+                    PurchaseCost: quickbookCustItm.data.Item.PurchaseCost,
+                    TrackQtyOnHand: quickbookCustItm.data.Item.TrackQtyOnHand,
+                    domain: quickbookCustItm.data.Item.domain,
+                    MetaData: quickbookCustItm.data.Item.MetaData,
+                },{useFindAndModify: false});
+                return quickbookCustItm;
+            }
+        })
+        .catch((error)=> {
+            throw new Error(error.message);
+        })
+
+    } catch (error) {
+        throw new Error(error.message)
+    }
+}
+
+OAuth.createInvoice = async function createInvoice(customerId, itemId) {
+    try {
+        return getValidToken(config.quickbooks.mode.type === 'sandbox' ? config.quickbooks.relamId.sandbox : config.quickbooks.relamId.production)
+        .then(async(vaildTokenDetails) => {
+
+            let validToken = vaildTokenDetails.valid ? vaildTokenDetails.authDetails : await refreshToken(vaildTokenDetails.authDetails);
+            let postData = {
+                module: 'customer',
+                subModule: 'createCusInvoice',
+                functionName: 'returnCreCusInv',
+                companyId: validToken.redirectRes.realmId,
+                authDetails: validToken.oAuth2Token.access_token,
+                bodyData: config.invoiceDumy
+            }
+            let cusInvDetails = await CusInv.addCustInv({itemId: itemId, customerId: customerId});
+            let quickBookInv = await quickBookApi.postApi(postData);
+
+            if(quickBookInv.data) {
+                await CusInv.findByIdAndUpdate({_id: ObjectID(cusInvDetails._id)},{
+                    custInvId: quickBookInv.data.Invoice.Id
+                },{upsert: true, useFindAndModify: false})
+            }
+            sendInvoiceEmail(cusInvDetails._id, validToken.redirectRes.realmId, validToken.oAuth2Token.access_token)
+            return quickBookInv;
 
         })
         .catch((error)=> {
@@ -167,4 +255,28 @@ OAuth.addCustomer = function addCustomer() {
 }
 
 
+async function sendInvoiceEmail(invoiceId, companyId, authDetails) {
+    try {
+        let invDetails = await CusInv.findById({_id: ObjectID(invoiceId)});
+        let customerDetails = await Customer.findById({_id: ObjectID(invDetails.customerId)});
+
+        let sendInvEmail = {
+            module: 'customer',
+            subModule: 'sendInvMail',
+            functionName: 'returnSendInvMail',
+            companyId: companyId,
+            authDetails: authDetails,
+            invoiceId: invDetails.custInvId,
+            email: customerDetails.PrimaryEmailAddr.Address,
+            contentType: 'email',
+            bodyData: {},
+        }
+
+        await quickBookApi.postApi(sendInvEmail)
+
+
+    } catch (error) {
+        throw new Error(error.message);
+    }
+}
 

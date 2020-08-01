@@ -15,7 +15,7 @@ apiCalling.postApi = async function(postData) {
             headers: {
               'accept': 'application/json',
               'authorization': `Bearer ${postData.authDetails}`,
-              'content-type': 'application/json',
+              'content-type': postData.contentType ? postData.contentType === 'email' ? 'application/octet-stream' : 'application/json' : 'application/json'
             },
             data: requestBodyData
           };

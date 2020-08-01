@@ -24,7 +24,7 @@ const quickBookCustomerSchema = new Schema({
     trno: {
         type: Number,
         default: Date.now()
-    }
+    },
 });
 
 quickBookCustomerSchema.statics.addCust = async function addCust (data) {
